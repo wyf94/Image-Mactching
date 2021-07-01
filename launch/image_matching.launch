@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="image_matching" pkg="image_matching" type="image_matching_node.py" output="screen">
+    <rosparam command="load" file="$(find image_matching)/launch/image_matching.yaml"/>
+  </node>
+</launch>
