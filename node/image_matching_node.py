@@ -28,7 +28,7 @@ def match_image(img_mom, img_son):
         print("The size of img_mom > = the size of img_son.")
         return 0
 
-    for i in range(5 ,101):
+    for i in range(10 ,51):
         # 缩小子图
         tmp_factor = float(i / 100)
         template = cv2.resize(img_son, None, fx=tmp_factor, fy=tmp_factor, interpolation=cv2.INTER_AREA)
@@ -42,7 +42,7 @@ def match_image(img_mom, img_son):
             match_coordinate = max_loc
         
     return match_factor, match_coordinate, max_score
-    
+
 '''
 @description: 给图像添加mask，并返回mask图片
 @param {*} img 输入图像
@@ -105,21 +105,28 @@ def img_add_roi(img_mom, img_son,factor, left_top, alpha):
     return img_mom
 
 def callback(img_big, img_small):
-    global frame_count, factor, coordinate
+    global frame_count, factor, coordinate,flag
 
     bridge1 = CvBridge()
     bridge2 = CvBridge()
+    bridge3 = CvBridge()
     image_big = bridge1.imgmsg_to_cv2(img_big,"bgr8")
     image_small = bridge2.imgmsg_to_cv2(img_small,"bgr8")
     print('frame_count: ', frame_count)
-    if(frame_count == 0):
+    if(flag == 0):
         factor, coordinate, score = match_image(image_big, image_small)
+        flag = 1
         print('factor: ',factor)
         print('coordinate: ',coordinate)
     else:
         img_small_mask = img_mask(image_small, color = (0, 0, 255), factor = 0.6)
         new_img =  img_add_roi(image_big, img_small_mask, factor, coordinate, 0.3)
         new_img = cv2.resize(new_img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
+
+        msg = bridge3.cv2_to_imgmsg(new_img, encoding="bgr8")
+        img_pub.publish(msg)
+        rate.sleep()
+
         cv2.imshow("new_img", new_img)
         cv2.waitKey(1)  
 
@@ -134,8 +141,13 @@ def callback(img_big, img_small):
         # cv2.waitKey(1)
 
 if __name__ == '__main__':
-    rospy.init_node('showImage',anonymous = True)
+    # rospy.init_node('showImage',anonymous = True)/
+    rospy.init_node('img_matching_pub', anonymous=True)
+    img_pub = rospy.Publisher('/image_matching_publisher', Image, queue_size=10)
+    rate = rospy.Rate(25)
+
     frame_count = 0
+    flag = 0
     image_sub0= message_filters.Subscriber('/bitcq_camera/image_source0', Image)
     image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source1', Image)
     ts = message_filters.TimeSynchronizer([image_sub0, image_sub1], 10)
