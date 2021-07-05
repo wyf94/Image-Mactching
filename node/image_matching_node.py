@@ -105,14 +105,20 @@ def img_add_roi(img_mom, img_son,factor, left_top, alpha):
     return img_mom
 
 def callback(img_big, img_small):
-    global frame_count, factor, coordinate,flag
+    global frame_count, factor, coordinate,flag,video0,video1
 
     bridge1 = CvBridge()
     bridge2 = CvBridge()
     bridge3 = CvBridge()
     image_big = bridge1.imgmsg_to_cv2(img_big,"bgr8")
     image_small = bridge2.imgmsg_to_cv2(img_small,"bgr8")
+    # print("image_small size:",image_small.shape)
     print('frame_count: ', frame_count)
+
+    # 每帧图片写入视频
+    video0.write(image_big)
+    video1.write(image_small)
+    
     if(flag == 0):
         factor, coordinate, score = match_image(image_big, image_small)
         flag = 1
@@ -128,17 +134,9 @@ def callback(img_big, img_small):
         rate.sleep()
 
         cv2.imshow("new_img", new_img)
-        cv2.waitKey(1)  
+        cv2.waitKey(1)    
 
     frame_count +=1
-
-    # image_big = cv2.resize(image_big, (500, 500), interpolation=cv2.INTER_AREA)
-    # image_small = cv2.resize(image_small, (500, 500), interpolation=cv2.INTER_AREA)
-    
-    # cv2.imshow("image_big",image_big)
-    # cv2.waitKey(1)
-        # cv2.imshow("new_img", new_img)
-        # cv2.waitKey(1)
 
 if __name__ == '__main__':
     # rospy.init_node('showImage',anonymous = True)/
@@ -146,10 +144,16 @@ if __name__ == '__main__':
     img_pub = rospy.Publisher('/image_matching_publisher', Image, queue_size=10)
     rate = rospy.Rate(25)
 
+    # # 保存长短焦摄像头视频
+    # fourcc0= cv2.VideoWriter_fourcc(*'XVID')
+    # video0 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output0.avi', fourcc0, 24, (2448,  2048)) 
+    # fourcc1= cv2.VideoWriter_fourcc(*'XVID')
+    # video1 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output1.avi', fourcc1, 24, (2448,  2048))
+
     frame_count = 0
     flag = 0
-    image_sub0= message_filters.Subscriber('/bitcq_camera/image_source0', Image)
-    image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source1', Image)
-    ts = message_filters.TimeSynchronizer([image_sub0, image_sub1], 10)
+    image_sub0= message_filters.Subscriber('/bitcq_camera/image_source1', Image)
+    image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source0', Image)
+    ts = message_filters.TimeSynchronizer([image_sub0, image_sub1], 15)
     ts.registerCallback(callback)
     rospy.spin()
