@@ -111,13 +111,15 @@ def callback(img_big, img_small):
     bridge2 = CvBridge()
     bridge3 = CvBridge()
     image_big = bridge1.imgmsg_to_cv2(img_big,"bgr8")
+    print('img_0 time:', img_small.header.stamp.to_sec())
     image_small = bridge2.imgmsg_to_cv2(img_small,"bgr8")
+    print('img_0 time:', img_small.header.stamp.to_sec())
     # print("image_small size:",image_small.shape)
     print('frame_count: ', frame_count)
 
-    # 每帧图片写入视频
-    video0.write(image_big)
-    video1.write(image_small)
+    # # 每帧图片写入视频
+    # video0.write(image_big)
+    # video1.write(image_small)
     
     if(flag == 0):
         factor, coordinate, score = match_image(image_big, image_small)
@@ -151,9 +153,13 @@ if __name__ == '__main__':
     # video1 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output1.avi', fourcc1, 24, (2448,  2048))
 
     frame_count = 0
-    flag = 0
-    image_sub0= message_filters.Subscriber('/bitcq_camera/image_source1', Image)
-    image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source0', Image)
+    flag = 1
+    factor = 0.24
+    coordinate= (578, 363)
+    # image_sub0= message_filters.Subscriber('/bitcq_camera/image_source1', Image)
+    # image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source0', Image)
+    image_sub0= message_filters.Subscriber('image_source_0', Image)
+    image_sub1 = message_filters.Subscriber('image_source_1', Image)
     ts = message_filters.TimeSynchronizer([image_sub0, image_sub1], 15)
     ts.registerCallback(callback)
     rospy.spin()
