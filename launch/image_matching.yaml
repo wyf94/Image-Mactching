@@ -1,6 +1,6 @@
 #Camera topic here
 camera_topic: "/image_matching"
-queue_size: 1
+queue_size: 5
 
 # Set your detection topic here
 # detection_topic: "/darknet_ros/bounding_boxes"
@@ -15,7 +15,7 @@ queue_size: 1
 min_hits: 1
 
 # max age
-max_age: 5
+max_age: 10
 
 image_view:
 

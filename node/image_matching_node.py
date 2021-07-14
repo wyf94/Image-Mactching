@@ -1,15 +1,18 @@
-#!/home/wyf/anaconda3/envs/test/bin/python
+#!/usr/bin/python3
 #!coding=utf-8
 
 import rospy
+import rospkg
 import cv2
 import numpy as np
+import os
+from ruamel import yaml
 from sensor_msgs.msg import Image
 import cv_bridge
 from cv_bridge import CvBridge, CvBridgeError
 
 import message_filters
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image, CameraInfo   
 
 import image_matching.test.test as test
 
@@ -28,9 +31,9 @@ def match_image(img_mom, img_son):
         print("The size of img_mom > = the size of img_son.")
         return 0
 
-    for i in range(10 ,51):
+    for i in range(10 ,71):
         # 缩小子图
-        tmp_factor = float(i / 100)
+        tmp_factor = i * 0.01
         template = cv2.resize(img_son, None, fx=tmp_factor, fy=tmp_factor, interpolation=cv2.INTER_AREA)
 
         # 相关系数匹配方法：cv2.TM_CCOEFF_NORMED
@@ -105,40 +108,42 @@ def img_add_roi(img_mom, img_son,factor, left_top, alpha):
     return img_mom
 
 def callback(img_big, img_small):
-    global frame_count, factor, coordinate,flag,video0,video1
+    global frame_count, factor, coordinate,flag,video0,video1, yamlpath,jsonpath
 
-    bridge1 = CvBridge()
-    bridge2 = CvBridge()
-    bridge3 = CvBridge()
-    image_big = bridge1.imgmsg_to_cv2(img_big,"bgr8")
-    print('img_0 time:', img_small.header.stamp.to_sec())
-    image_small = bridge2.imgmsg_to_cv2(img_small,"bgr8")
-    print('img_0 time:', img_small.header.stamp.to_sec())
-    # print("image_small size:",image_small.shape)
-    print('frame_count: ', frame_count)
+    bridge = CvBridge()
+    image_big = bridge.imgmsg_to_cv2(img_big,"bgr8")
+    image_small = bridge.imgmsg_to_cv2(img_small,"bgr8")
 
     # # 每帧图片写入视频
     # video0.write(image_big)
     # video1.write(image_small)
-    
+
     if(flag == 0):
         factor, coordinate, score = match_image(image_big, image_small)
         flag = 1
         print('factor: ',factor)
         print('coordinate: ',coordinate)
+        match_list = {"factor": factor, 
+                                "x": coordinate[0], 
+                                "y": coordinate[1]}
+        with open(yamlpath, "w", encoding="utf-8") as f:
+            yaml.dump(match_list, f, Dumper=yaml.RoundTripDumper)
+            f.close()
+
     else:
         img_small_mask = img_mask(image_small, color = (0, 0, 255), factor = 0.6)
         new_img =  img_add_roi(image_big, img_small_mask, factor, coordinate, 0.3)
         new_img = cv2.resize(new_img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
 
-        msg = bridge3.cv2_to_imgmsg(new_img, encoding="bgr8")
-        img_pub.publish(msg)
-        rate.sleep()
-
         cv2.imshow("new_img", new_img)
         cv2.waitKey(1)    
 
-    frame_count +=1
+        msg = bridge.cv2_to_imgmsg(new_img, encoding="bgr8")
+        img_pub.publish(msg)
+        rate.sleep()
+
+        print("publish frame: ", frame_count)
+        frame_count +=1
 
 if __name__ == '__main__':
     # rospy.init_node('showImage',anonymous = True)/
@@ -151,11 +156,12 @@ if __name__ == '__main__':
     # video0 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output0.avi', fourcc0, 24, (2448,  2048)) 
     # fourcc1= cv2.VideoWriter_fourcc(*'XVID')
     # video1 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output1.avi', fourcc1, 24, (2448,  2048))
-
+    
+    yamlpath = os.path.join("/home/nvidia/ros_ws/src/Image-Matching/node/", "match_info.yaml")
     frame_count = 0
-    flag = 1
-    factor = 0.24
-    coordinate= (578, 363)
+    flag = 0
+    # factor = 0.24
+    # coordinate= (578, 363)
     # image_sub0= message_filters.Subscriber('/bitcq_camera/image_source1', Image)
     # image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source0', Image)
     image_sub0= message_filters.Subscriber('image_source_0', Image)
