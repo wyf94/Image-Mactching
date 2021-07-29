@@ -16,6 +16,9 @@ from sensor_msgs.msg import Image, CameraInfo
 
 import image_matching.test.test as test
 
+from rospkg import RosPack
+
+
 '''
 @description: 在母图中寻找与子图最为相似的位置，并返回子图缩放比例，匹配位置的左上角坐标，相似程度
 @param {*} img_mom 母图
@@ -156,8 +159,9 @@ if __name__ == '__main__':
     # video0 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output0.avi', fourcc0, 24, (2448,  2048)) 
     # fourcc1= cv2.VideoWriter_fourcc(*'XVID')
     # video1 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output1.avi', fourcc1, 24, (2448,  2048))
-    
-    yamlpath = os.path.join("/home/nvidia/ros_ws/src/Image-Matching/node/", "match_info.yaml")
+    rp = RosPack()
+    yamlpath = rp.get_path('image_matching') + '/match_info.yaml'
+    # yamlpath = os.path.join("/home/nvidia/ros_ws/src/Image-Matching/node/", "match_info.yaml")
     frame_count = 0
     flag = 0
     # factor = 0.24
