@@ -111,7 +111,7 @@ def img_add_roi(img_mom, img_son,factor, left_top, alpha):
     return img_mom
 
 def callback(img_big, img_small):
-    global frame_count, factor, coordinate,flag, video0, video1, yamlpath,jsonpath, show_image,publish_image
+    global frame_count, factor, coordinate, flag, video0, video1, yamlpath,jsonpath, show_image,publish_image
 
     bridge = CvBridge()
     image_big = bridge.imgmsg_to_cv2(img_big,"bgr8")
@@ -132,7 +132,6 @@ def callback(img_big, img_small):
         with open(yamlpath, "w", encoding="utf-8") as f:
             yaml.dump(match_list, f, Dumper=yaml.RoundTripDumper)
             f.close()
-
     else:
         img_small_mask = img_mask(image_small, color = (0, 0, 255), factor = 0.6)
         new_img =  img_add_roi(image_big, img_small_mask, factor, coordinate, 0.3)
@@ -150,8 +149,6 @@ def callback(img_big, img_small):
             print("publish frame: ", frame_count)
             frame_count +=1
 
-
-
 if __name__ == '__main__':
     rospy.init_node('img_matching_pub', anonymous=True)
     img_pub = rospy.Publisher('/image_matching_publisher', Image, queue_size=10)
@@ -164,9 +161,9 @@ if __name__ == '__main__':
     flag = 0
     show_image = rospy.get_param('/image_matching/show_image')
     publish_image = rospy.get_param('/image_matching/publish_image')
-    topic_long = rospy.get_param('/image_matching/topic_name_image_long')
     topic_short = rospy.get_param('/image_matching/topic_name_image_short')
-
+    topic_long = rospy.get_param('/image_matching/topic_name_image_long')
+    
     # # 保存长短焦摄像头视频
     # fourcc0= cv2.VideoWriter_fourcc(*'XVID')
     # video0 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output0.avi', fourcc0, 24, (2448,  2048)) 
