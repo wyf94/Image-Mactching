@@ -1,24 +1,8 @@
-#Camera topic here
-camera_topic: "/image_matching"
-queue_size: 5
+# Long Camera topic here
+topic_name_image_short: "image_source_0"
+# Short Camera topic here
+topic_name_image_long: "image_source_1"
 
-# Set your detection topic here
-# detection_topic: "/darknet_ros/bounding_boxes"
+show_image: true
+publish_image: true
 
-# Set your output topic here
-#count_topic: "/image_matching"
-
-# Threshold for Costs between detections and tracks
-#cost_threhold: 15
-
-# min_hits
-min_hits: 1
-
-# max age
-max_age: 10
-
-image_view:
-
-  enable_opencv: true
-  wait_key_delay: 1
-  enable_console_output: true

@@ -34,7 +34,7 @@ def match_image(img_mom, img_son):
         print("The size of img_mom > = the size of img_son.")
         return 0
 
-    for i in range(10 ,71):
+    for i in range(5 ,101):
         # 缩小子图
         tmp_factor = i * 0.01
         template = cv2.resize(img_son, None, fx=tmp_factor, fy=tmp_factor, interpolation=cv2.INTER_AREA)
@@ -111,7 +111,7 @@ def img_add_roi(img_mom, img_son,factor, left_top, alpha):
     return img_mom
 
 def callback(img_big, img_small):
-    global frame_count, factor, coordinate,flag,video0,video1, yamlpath,jsonpath
+    global frame_count, factor, coordinate,flag, video0, video1, yamlpath,jsonpath, show_image,publish_image
 
     bridge = CvBridge()
     image_big = bridge.imgmsg_to_cv2(img_big,"bgr8")
@@ -128,7 +128,7 @@ def callback(img_big, img_small):
         print('coordinate: ',coordinate)
         match_list = {"factor": factor, 
                                 "x": coordinate[0], 
-                                "y": coordinate[1]}
+                                "y": coordinate[1]} 
         with open(yamlpath, "w", encoding="utf-8") as f:
             yaml.dump(match_list, f, Dumper=yaml.RoundTripDumper)
             f.close()
@@ -136,40 +136,47 @@ def callback(img_big, img_small):
     else:
         img_small_mask = img_mask(image_small, color = (0, 0, 255), factor = 0.6)
         new_img =  img_add_roi(image_big, img_small_mask, factor, coordinate, 0.3)
-        new_img = cv2.resize(new_img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
+        # new_img = cv2.resize(new_img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
 
-        cv2.imshow("new_img", new_img)
-        cv2.waitKey(1)    
+        if show_image:
+            cv2.imshow("new_img", new_img)
+            cv2.waitKey(1)    
 
-        msg = bridge.cv2_to_imgmsg(new_img, encoding="bgr8")
-        img_pub.publish(msg)
-        rate.sleep()
+        if publish_image:
+            msg = bridge.cv2_to_imgmsg(new_img, encoding="bgr8")
+            img_pub.publish(msg)
+            rate.sleep()
 
-        print("publish frame: ", frame_count)
-        frame_count +=1
+            print("publish frame: ", frame_count)
+            frame_count +=1
+
+
 
 if __name__ == '__main__':
-    # rospy.init_node('showImage',anonymous = True)/
     rospy.init_node('img_matching_pub', anonymous=True)
     img_pub = rospy.Publisher('/image_matching_publisher', Image, queue_size=10)
     rate = rospy.Rate(25)
+
+    rp = RosPack()
+    yamlpath = rp.get_path('image_matching') + '/config/match_info.yaml'
+
+    frame_count = 0
+    flag = 0
+    show_image = rospy.get_param('/image_matching/show_image')
+    publish_image = rospy.get_param('/image_matching/publish_image')
+    topic_long = rospy.get_param('/image_matching/topic_name_image_long')
+    topic_short = rospy.get_param('/image_matching/topic_name_image_short')
 
     # # 保存长短焦摄像头视频
     # fourcc0= cv2.VideoWriter_fourcc(*'XVID')
     # video0 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output0.avi', fourcc0, 24, (2448,  2048)) 
     # fourcc1= cv2.VideoWriter_fourcc(*'XVID')
     # video1 = cv2.VideoWriter('/media/wyf/C49616A3961695D0/yunfeng.wu/longxing_data/output1.avi', fourcc1, 24, (2448,  2048))
-    rp = RosPack()
-    yamlpath = rp.get_path('image_matching') + '/match_info.yaml'
-    # yamlpath = os.path.join("/home/nvidia/ros_ws/src/Image-Matching/node/", "match_info.yaml")
-    frame_count = 0
-    flag = 0
-    # factor = 0.24
-    # coordinate= (578, 363)
-    # image_sub0= message_filters.Subscriber('/bitcq_camera/image_source1', Image)
-    # image_sub1 = message_filters.Subscriber('/bitcq_camera/image_source0', Image)
-    image_sub0= message_filters.Subscriber('image_source_0', Image)
-    image_sub1 = message_filters.Subscriber('image_source_1', Image)
-    ts = message_filters.TimeSynchronizer([image_sub0, image_sub1], 15)
+
+    # 长焦为子图，短焦为母图
+    image_sub_short= message_filters.Subscriber(topic_short, Image)
+    image_sub_long = message_filters.Subscriber(topic_long, Image)
+    ts = message_filters.TimeSynchronizer([image_sub_short, image_sub_long], 15)
+    # ts = message_filters.ApproximateTimeSynchronizer([image_sub_short, image_sub_long], queue_size=15, slop=0.1  )
     ts.registerCallback(callback)
     rospy.spin()
